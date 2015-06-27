@@ -6,11 +6,13 @@
 #define RIGHT_FORWARD   0
 #define RIGHT_BACK      180
 
-int8_t right_motor=6;
-int8_t left_motor=11;
+uint8_t battery_pin=A0;
+uint8_t right_motor=6;
+uint8_t left_motor=11;
 Servo left_servo;
 Servo right_servo;
 
+uint8_t voltage_cutoff=800;
 uint8_t state=0;
 int8_t pitch=0;
 int8_t yaw=0;
@@ -20,13 +22,7 @@ void setup()
 {
   Serial.begin(57600);
 
-  pinMode(A0,OUTPUT);
-  pinMode(A1,OUTPUT);
-  pinMode(A2,OUTPUT);
-  digitalWrite(A0,HIGH);
-  digitalWrite(A1,HIGH);
-  digitalWrite(A2,HIGH);
-
+  pinMode(battery_pin,INPUT);
   pinMode(right_motor,OUTPUT);
   pinMode(left_motor,OUTPUT);
   analogWrite(right_motor,0);
@@ -40,41 +36,52 @@ void setup()
 
 void loop()
 {
-  while(Serial.available()>0)
+  if(analogRead(battery_pin)>=voltage_cutoff)
   {
-    int temp=Serial.read();
-
-    if(temp!=-1)
+    while(Serial.available()>0)
     {
-      switch(state)
+      int temp=Serial.read();
+  
+      if(temp!=-1)
       {
-        case 0:
-          if(temp==0xfa)
-            state=1;
-          break;
-        case 1:
-          if(temp==ID)
-            state=2;
-          else
+        switch(state)
+        {
+          case 0:
+            if(temp==0xfa)
+              state=1;
+            break;
+          case 1:
+            if(temp==ID)
+              state=2;
+            else
+              state=0;
+            break;
+          case 2:
+            pitch=temp;
+            state=3;
+            break;
+          case 3:
+            yaw=temp;
+            state=4;
+            break;
+          case 4:
+            throttle=temp;
             state=0;
-          break;
-        case 2:
-          pitch=temp;
-          state=3;
-          break;
-        case 3:
-          yaw=temp;
-          state=4;
-          break;
-        case 4:
-          throttle=temp;
-          state=0;
-          break;
-        default:
-          state=0;
-          break;
+            break;
+          default:
+            state=0;
+            break;
+        }
       }
     }
+  }
+  else
+  {
+    pitch=0;
+    yaw=0;
+    throttle=0;
+    left_servo.write(90);
+    right_servo.write(90);
   }
   
   float left_value=90+(pitch/127.0)*90+(yaw/127.0)*90;

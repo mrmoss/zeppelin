@@ -103,6 +103,7 @@ class frame_t(wx.Frame):
 		menubar_m.Append(helpmenu_m,"&Help")
 
 		self.statusbar=self.CreateStatusBar()
+		self.statusbar.SetStatusText("Started.")
 
 		self.panel=wx.Panel(self)
 
@@ -155,14 +156,13 @@ class frame_t(wx.Frame):
 		self.update_combos(None)
 
 		self.timer_interval_ms=50
-		self.timer_id=100
-		self.timer=wx.Timer(self.panel,self.timer_id)
-		wx.EVT_TIMER(self.panel,self.timer_id,self.update)
+		self.timer=wx.Timer(self)
+		self.Bind(wx.EVT_TIMER,self.update,self.timer)
 
 		self.panel.Layout()
 
 	def OnClose(self,event):
-		pygame.quit()
+		self.disconnect()
 		self.Destroy()
 
 	def OnAbout(self,event):

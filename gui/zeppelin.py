@@ -51,7 +51,7 @@ class window_t(wx.html.HtmlWindow):
 
 class aboutbox_t(wx.Dialog):
 	def __init__(self,title,text):
-		wx.Dialog.__init__(self,None,-1,"About "+title,style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER)
+		wx.Dialog.__init__(self,None,-1,"About "+title,style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
 		hwin=window_t(self,-1,size=(400,200))
 
 		version_text=""

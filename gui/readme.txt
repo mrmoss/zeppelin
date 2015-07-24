@@ -4,3 +4,6 @@ Windows
 	C:\python27\scripts\pip.exe install pyserial
 Linux
 	sudo apt-get install python-wxgtk2.8 python-pygame python-serial
+
+
+/c/Python27/python.exe ../../../PyInstaller-2.1/pyinstaller.py zeppelin.py --onefile -w --icon=icon.ico

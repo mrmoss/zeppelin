@@ -312,14 +312,16 @@ class frame_t(wx.Frame):
 					self.serial_obj.write(chr(value))
 
 				num_buttons=min(256,self.joystick_obj.get_numbuttons())
-				self.serial_obj.write(chr(num_buttons))
 
 				button_array=[]
 
 				for button in range(0,num_buttons):
 					button_array.append(self.joystick_obj.get_button(button))
 
-				for byte in bool_array_to_byte_array(button_array):
+				button_array=bool_array_to_byte_array(button_array)
+				self.serial_obj.write(chr(len(button_array)))
+
+				for byte in button_array:
 						self.serial_obj.write(byte)
 
 				self.statusbar.SetStatusText("Connected to blimp.");

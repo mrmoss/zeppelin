@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Type=Application
+Name=Zeppelin
+GenericName=Control blimps
+Icon=/usr/bin/zeppelin/gui/src/icon.ico
+Exec=/usr/bin/zeppelin/gui/zeppelin_linux64
+Terminal=false
+Categories=Development;Engineering;Electronics;
+Keywords=embedded electronics;electronics;avr;microcontroller;

@@ -228,7 +228,7 @@ class frame_t(wx.Frame):
 	def serial_connect(self):
 		if self.serial_dropdown.GetCurrentSelection()>0:
 			serial_name=self.serial_dropdown.GetValue()
-			self.serial_obj=serial.Serial(serial_name,57600)
+			self.serial_obj=serial.Serial(serial_name,19200)
 
 	def serial_refresh(self):
 		old_value=self.serial_dropdown.GetValue()
@@ -300,7 +300,7 @@ class frame_t(wx.Frame):
 				self.serial_obj.write(chr(0xfa))
 				self.serial_obj.write(chr(0xaf))
 
-				num_axes=min(256,self.joystick_obj.get_numaxes())
+				num_axes=min(255,self.joystick_obj.get_numaxes())
 				self.serial_obj.write(chr(num_axes))
 
 				for axis in range(0,num_axes):
@@ -311,7 +311,7 @@ class frame_t(wx.Frame):
 
 					self.serial_obj.write(chr(value))
 
-				num_buttons=min(256,self.joystick_obj.get_numbuttons())
+				num_buttons=min(255,self.joystick_obj.get_numbuttons())
 
 				button_array=[]
 

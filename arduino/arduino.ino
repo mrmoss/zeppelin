@@ -13,10 +13,12 @@ uint8_t buttons[255];
 uint8_t num_axes=0;
 uint8_t num_buttons=0;
 uint16_t data_pointer=0;
+int32_t timeout_timer=0;
+int16_t timeout=500;
 
 void setup()
 {
-  Serial.begin(57600);
+  Serial.begin(19200);
 
   pinMode(battery_pin,INPUT);
   pinMode(right_motor,OUTPUT);
@@ -37,7 +39,7 @@ void loop()
     while(Serial.available()>0)
     {
       int temp=Serial.read();
-  
+
       if(temp!=-1)
       {
         switch(state)
@@ -55,11 +57,16 @@ void loop()
           case 2:
             num_axes=temp;
             data_pointer=0;
-            state=3;
+
+            if(num_axes==0)
+              state=4;
+            else
+              state=3;
+
             break;
           case 3:
             axes[data_pointer++]=temp;
-            
+
             if(data_pointer>=num_axes)
             {
               data_pointer=0;
@@ -69,14 +76,20 @@ void loop()
           case 4:
             num_buttons=temp;
             data_pointer=0;
-            state=5;
+
+            if(num_axes==0)
+              state=0;
+            else
+              state=5;
+
             break;
           case 5:
             buttons[data_pointer++]=temp;
-            
+
             if(data_pointer>=num_buttons)
             {
               data_pointer=0;
+              timeout_timer=millis()+timeout;
               state=0;
             }
             break;
@@ -106,6 +119,9 @@ void loop()
 
   throttle=map(throttle,0,127,0,100);
 
+  if(millis()>timeout_timer)
+    throttle=0;
+  
   analogWrite(left_motor,throttle);
   analogWrite(right_motor,throttle);
 }

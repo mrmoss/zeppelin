@@ -1,11 +1,5 @@
 #include <Servo.h>
 
-#define ID              0xef
-#define LEFT_FORWARD    180
-#define LEFT_BACK       0
-#define RIGHT_FORWARD   0
-#define RIGHT_BACK      180
-
 uint8_t battery_pin=A0;
 uint8_t right_motor=6;
 uint8_t left_motor=11;
@@ -14,9 +8,11 @@ Servo right_servo;
 
 uint8_t voltage_cutoff=800;
 uint8_t state=0;
-int8_t pitch=0;
-int8_t yaw=0;
-uint8_t throttle=0;
+int8_t axes[255];
+uint8_t buttons[255];
+uint8_t num_axes=0;
+uint8_t num_buttons=0;
+uint16_t data_pointer=0;
 
 void setup()
 {
@@ -51,22 +47,38 @@ void loop()
               state=1;
             break;
           case 1:
-            if(temp==ID)
+            if(temp==0xaf)
               state=2;
             else
               state=0;
             break;
           case 2:
-            pitch=temp;
+            num_axes=temp;
+            data_pointer=0;
             state=3;
             break;
           case 3:
-            yaw=temp;
-            state=4;
+            axes[data_pointer++]=temp;
+            
+            if(data_pointer>=num_axes)
+            {
+              data_pointer=0;
+              state=4;
+            }
             break;
           case 4:
-            throttle=temp;
-            state=0;
+            num_buttons=temp;
+            data_pointer=0;
+            state=5;
+            break;
+          case 5:
+            buttons[data_pointer++]=temp;
+            
+            if(data_pointer>=num_buttons)
+            {
+              data_pointer=0;
+              state=0;
+            }
             break;
           default:
             state=0;
@@ -77,18 +89,23 @@ void loop()
   }
   else
   {
-    pitch=0;
-    yaw=0;
-    throttle=0;
     left_servo.write(90);
     right_servo.write(90);
   }
-  
-  float left_value=90+(pitch/127.0)*90+(yaw/127.0)*90;
-  float right_value=90+(pitch/127.0)*90-(yaw/127.0)*90;
 
-  left_servo.write(map(left_value,LEFT_BACK,LEFT_FORWARD,0,180));
-  right_servo.write(map(right_value,RIGHT_BACK,RIGHT_FORWARD,0,180));
+  float left_value=90-(axes[3]/127.0)*90+(axes[2]/127.0)*90;
+  float right_value=90-(axes[3]/127.0)*90-(axes[2]/127.0)*90;
+
+  left_servo.write(map(left_value,0,180,0,180));
+  right_servo.write(map(right_value,180,0,0,180));
+
+  int16_t throttle=-axes[1];
+
+  if(throttle<0)
+    throttle=0;
+
+  throttle=map(throttle,0,127,0,100);
+
   analogWrite(left_motor,throttle);
   analogWrite(right_motor,throttle);
 }

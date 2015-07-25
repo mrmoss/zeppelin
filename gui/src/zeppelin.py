@@ -9,6 +9,21 @@ import wx
 import wxversion
 import wx.html
 
+def bool_array_to_byte_array(bools):
+	array=[]
+
+	temp=0
+
+	for ii in range(0,len(bools)):
+		if bools[ii]:
+			temp+=1<<int(ii%8)
+
+		if ii%8>=7 or ii==len(bools)-1:
+			array.append(chr(temp))
+			temp=0
+
+	return array
+
 def serial_list():
 	valid_ports=[]
 
@@ -128,18 +143,6 @@ class frame_t(wx.Frame):
 		self.Bind(wx.EVT_COMBOBOX,self.update_combos,self.joystick_dropdown)
 		self.box_sizer.Add(self.joystick_dropdown,0,wx.ALL,4)
 
-		self.settings_text=wx.StaticText(self.panel,-1,"Settings")
-		self.box_sizer.Add(self.settings_text,0,wx.ALL,4)
-
-		self.settings_sizer=wx.BoxSizer(wx.HORIZONTAL)
-		self.box_sizer.Add(self.settings_sizer,0,wx.ALL,4)
-
-		self.settings_reverse_yaw_checkbox=wx.CheckBox(self.panel,-1,"Reverse Yaw")
-		self.settings_sizer.Add(self.settings_reverse_yaw_checkbox,0,wx.ALL,4)
-
-		self.settings_reverse_pitch_checkbox=wx.CheckBox(self.panel,-1,"Reverse Pitch")
-		self.settings_sizer.Add(self.settings_reverse_pitch_checkbox,0,wx.ALL,4)
-
 		self.button_sizer=wx.BoxSizer(wx.HORIZONTAL)
 		self.box_sizer.Add(self.button_sizer,0,wx.ALL,4)
 
@@ -228,6 +231,9 @@ class frame_t(wx.Frame):
 			self.serial_obj=serial.Serial(serial_name,57600)
 
 	def serial_refresh(self):
+		old_value=self.serial_dropdown.GetValue()
+		selected_index=0
+
 		self.serial_dropdown.Enable(False)
 		self.serial_dropdown.SetValue("");
 		self.serial_dropdown.Clear()
@@ -235,12 +241,19 @@ class frame_t(wx.Frame):
 		self.serial_dropdown.SetSelection(0)
 		serials=serial_list()
 
-		for serial in serials:
-			self.serial_dropdown.Append(serial)
+		for ii in range(0,len(serials)):
+			self.serial_dropdown.Append(serials[ii])
+
+			if serials[ii]==old_value:
+				selected_index=ii+1
+
+		if selected_index>0:
+			self.serial_dropdown.SetSelection(selected_index)
+		elif len(serials)>0:
+			self.serial_dropdown.SetSelection(1)
 
 		if len(serials)>0:
 			self.serial_dropdown.Enable(True)
-			self.serial_dropdown.SetSelection(1)
 
 	def joystick_disconnect(self):
 		pygame.quit()
@@ -255,6 +268,9 @@ class frame_t(wx.Frame):
 			self.joystick_obj.init()
 
 	def joystick_refresh(self):
+		old_value=self.joystick_dropdown.GetValue()
+		selected_index=0
+
 		self.joystick_dropdown.Enable(False)
 		self.joystick_dropdown.SetValue("");
 		self.joystick_dropdown.Clear()
@@ -262,43 +278,52 @@ class frame_t(wx.Frame):
 		self.joystick_dropdown.SetSelection(0)
 		joysticks=joystick_list()
 
-		for joystick in joysticks:
-			self.joystick_dropdown.Append(joystick)
+		for ii in range(0,len(joysticks)):
+			self.joystick_dropdown.Append(joysticks[ii])
+
+			if joysticks[ii]==old_value:
+				selected_index=ii+1
+
+		if selected_index>0:
+			self.joystick_dropdown.SetSelection(selected_index)
+		elif len(joysticks)>0:
+			self.joystick_dropdown.SetSelection(1)
 
 		if len(joysticks)>0:
 			self.joystick_dropdown.Enable(True)
-			self.joystick_dropdown.SetSelection(1)
 
 	def update(self,event):
 		if self.serial_obj.isOpen():
 			try:
 				pygame.event.get()
 
-				pitch=int(-self.joystick_obj.get_axis(3)*127)
-				if self.settings_reverse_pitch_checkbox.GetValue():
-					pitch=-pitch
-
-				yaw=int(self.joystick_obj.get_axis(2)*127)
-				if self.settings_reverse_yaw_checkbox.GetValue():
-					yaw=-yaw
-
-				throttle=int(max(0,-self.joystick_obj.get_axis(1)*100))
-
-				self.statusbar.SetStatusText("Connected to blimp. | "+
-					"Throttle: "+str(throttle)+"\t   Yaw: "+str(yaw)+"\t\tPitch: "+str(pitch))
-
-				if pitch<0:
-					pitch+=256
-				if yaw<0:
-					yaw+=256
-				if throttle<0:
-					throttle+=256
-
 				self.serial_obj.write(chr(0xfa))
-				self.serial_obj.write(chr(0xef))
-				self.serial_obj.write(chr(pitch))
-				self.serial_obj.write(chr(yaw))
-				self.serial_obj.write(chr(throttle))
+				self.serial_obj.write(chr(0xaf))
+
+				num_axes=min(256,self.joystick_obj.get_numaxes())
+				self.serial_obj.write(chr(num_axes))
+
+				for axis in range(0,num_axes):
+					value=int(self.joystick_obj.get_axis(axis)*127)
+
+					if value<0:
+						value+=256
+
+					self.serial_obj.write(chr(value))
+
+				num_buttons=min(256,self.joystick_obj.get_numbuttons())
+				self.serial_obj.write(chr(num_buttons))
+
+				button_array=[]
+
+				for button in range(0,num_buttons):
+					button_array.append(self.joystick_obj.get_button(button))
+
+				for byte in bool_array_to_byte_array(button_array):
+						self.serial_obj.write(byte)
+
+				self.statusbar.SetStatusText("Connected to blimp.");
+
 			except:
 				self.disconnect()
 				self.statusbar.SetStatusText("Serial unexpectedly disconnected.")
